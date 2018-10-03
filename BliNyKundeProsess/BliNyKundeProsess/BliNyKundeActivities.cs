@@ -82,6 +82,11 @@ namespace BliNyKundeProsess
         {
             log.Info($"Sender Email om signaturtil kunde: {signatar.Navn}");
 
+            //Test throwing exception
+            if (signatar.Navn.ToUpper().Contains("KARI"))
+            {
+                throw new InvalidOperationException("Ugyldig navn");
+            }
             // simulate doing the activity
             await Task.Delay(5000);
         }
