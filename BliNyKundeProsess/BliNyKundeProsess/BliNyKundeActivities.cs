@@ -75,6 +75,16 @@ namespace BliNyKundeProsess
             };
         }
 
+        [FunctionName("A_GetSignatar")]
+        public static Signatar GetSignatar(
+            [ActivityTrigger] string kundenummer,
+            TraceWriter log)
+        {
+            log.Info($"Henter liste av signatarer for kunde:{kundenummer} ");
+
+            return new Signatar { Navn = "Ola", Epostadresse = "ola@gmail.com", Mobilnummer = "+47 33333333" };
+        }
+
         [FunctionName("A_SendSignMessage")]
         public static async Task SendSignMessage(
             [ActivityTrigger] Signatar signatar,
@@ -83,12 +93,39 @@ namespace BliNyKundeProsess
             log.Info($"Sender Email om signaturtil kunde: {signatar.Navn}");
 
             //Test throwing exception
-            if (signatar.Navn.ToUpper().Contains("KARI"))
+            if (signatar.Navn.ToUpper().Contains("ERROR"))
             {
                 throw new InvalidOperationException("Ugyldig navn");
             }
             // simulate doing the activity
             await Task.Delay(5000);
+        }
+
+        [FunctionName("A_SendSignMessageToService")]
+        public static void SendSignMessageToService(
+            [ActivityTrigger] SigneringsInfo signeringsInfo,
+            [Table("Signeringer", "AzureWebJobsStorage")] out Signering signering,
+            TraceWriter log)
+        {
+            log.Info($"Sender melding til signeringsservice om signeringer for OrchestrationId: {signeringsInfo.OrchestrationId}");
+
+            var signeringsCode = Guid.NewGuid().ToString("N");
+            signering = new Signering
+            {
+                PartitionKey = "Signering",
+                RowKey = signeringsCode,
+                OrchestrationId = signeringsInfo.OrchestrationId
+        };
+
+            log.Info($"Legger info om sigernering i Azure Table Storage: {signering}"); //TODO sjekk logg
+
+            log.Info($"Signerings url: {signering}"); //TODO sjekk logg
+
+            //TODO, hent fra konfig.: var host = ConfigurationManager.AppSettings["Host"]; 
+            var host = "http://localhost:7071";
+            var signeringsurl = $"{host}/api/SubmitSignering/{signeringsCode}";
+            //Lag en http trigger event fra service...
+
         }
 
 

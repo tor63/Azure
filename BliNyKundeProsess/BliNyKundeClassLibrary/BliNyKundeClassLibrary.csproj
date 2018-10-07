@@ -42,6 +42,8 @@
   <ItemGroup>
     <Compile Include="Signatar.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Signering.cs" />
+    <Compile Include="SigneringsInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

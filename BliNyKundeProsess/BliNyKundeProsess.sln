@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BliNyKundeProsess", "BliNyKundeProsess\BliNyKundeProsess.csproj", "{88F0BA37-914A-4D7E-B662-587091C5B851}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BliNyKundeProsess", "BliNyKundeProsess\BliNyKundeProsess.csproj", "{88F0BA37-914A-4D7E-B662-587091C5B851}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BliNyKundeClassLibrary", "BliNyKundeClassLibrary\BliNyKundeClassLibrary.csproj", "{8CCF7A31-88AE-4DE3-9573-BCDC3C84C043}"
 EndProject
