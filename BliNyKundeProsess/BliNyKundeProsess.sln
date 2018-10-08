@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BliNyKundeProsess", "BliNyK
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BliNyKundeClassLibrary", "BliNyKundeClassLibrary\BliNyKundeClassLibrary.csproj", "{8CCF7A31-88AE-4DE3-9573-BCDC3C84C043}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataLayer", "DataLayer\DataLayer.csproj", "{BD9F992E-176E-49B8-B1E9-292115C169E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{8CCF7A31-88AE-4DE3-9573-BCDC3C84C043}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8CCF7A31-88AE-4DE3-9573-BCDC3C84C043}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8CCF7A31-88AE-4DE3-9573-BCDC3C84C043}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD9F992E-176E-49B8-B1E9-292115C169E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD9F992E-176E-49B8-B1E9-292115C169E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD9F992E-176E-49B8-B1E9-292115C169E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD9F992E-176E-49B8-B1E9-292115C169E0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

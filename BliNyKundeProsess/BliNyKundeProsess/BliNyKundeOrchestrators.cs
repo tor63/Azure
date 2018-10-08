@@ -25,7 +25,7 @@ namespace BliNyKundeProsess
 
             try
             {
-                if (false)
+                if (true)
                 {
                     //Chaining Functions
                     if (!ctx.IsReplaying)
@@ -34,16 +34,16 @@ namespace BliNyKundeProsess
                     kundenummerTemp = await
                         ctx.CallActivityAsync<string>("A_InitNyKunde", firmanavn);
 
-                    if (!ctx.IsReplaying)
-                        log.Info("About to call A_OpprettDriftskonto activity");
+                    //if (!ctx.IsReplaying)
+                    //    log.Info("About to call A_OpprettDriftskonto activity");
 
-                    kontonummer = await
-                        ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
+                    //kontonummer = await
+                    //    ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
 
-                    //Send sms og epost
-                    if (!ctx.IsReplaying)
-                        log.Info("About to call A_SendAksjekapitalRequestEmail activity");
-                    await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", kundenummerTemp);
+                    ////Send sms og epost
+                    //if (!ctx.IsReplaying)
+                    //    log.Info("About to call A_SendAksjekapitalRequestEmail activity");
+                    //await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", kundenummerTemp);
                 }
 
                 //Start sjekk om aksjekapital er innbetalt
@@ -134,7 +134,7 @@ namespace BliNyKundeProsess
                     //}
                 }
 
-                if (true)
+                if (false)
                 {
                     //Signering
                     if (!ctx.IsReplaying)

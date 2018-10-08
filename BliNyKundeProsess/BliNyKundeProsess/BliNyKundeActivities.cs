@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using BliNyKundeClassLibrary;
+using DataLayer;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
 
@@ -21,8 +22,16 @@ namespace BliNyKundeProsess
             log.Info($"Oppretter midlertidig kundenummer for: {firmanavn}");
 
             // simulate doing the activity
-            const string midlertidigkundenummer = "33112233445"; //use GUID instead??? To get a unique number.
-            await Task.Delay(5000);
+            //const string midlertidigkundenummer = "33112233445"; //use GUID instead??? To get a unique number.
+            //await Task.Delay(5000);
+
+            //Opprett sak i database
+            var dbsak = new DbSak
+            {
+                Kundenummer = Guid.NewGuid().ToString("N"),
+                Kundenavn = firmanavn
+            };
+            DbSakService.createSak(dbsak);
 
             //Test throwing exception
             if (firmanavn.ToUpper().Contains("ERROR"))
@@ -30,7 +39,7 @@ namespace BliNyKundeProsess
                 throw new InvalidOperationException("Ugyldig firmanavn");
             }
 
-            return midlertidigkundenummer;
+            return dbsak.Kundenummer;
         }
 
         [FunctionName("A_OpprettDriftskonto")]
