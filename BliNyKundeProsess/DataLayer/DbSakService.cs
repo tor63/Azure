@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DataLayer
 {
-    public class DbSakService
+    public class DbSakService : IDbSakService
     {
 
-        public static void CreateSak(DbSak sak)
+        public void CreateSak(DbSak sak)
         {
             var builder = new SqlConnectionStringBuilder
             {
