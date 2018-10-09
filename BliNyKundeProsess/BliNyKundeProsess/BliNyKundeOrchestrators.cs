@@ -20,39 +20,40 @@ namespace BliNyKundeProsess
             string kundenummerTemp = null;
             string kundenummer = null;
             string kontonummer = null;
-            string aksjekapitalApprovalResult = "Unknown";
-            string sjekkSigneringsResult = "Unknown";
+            string aksjekapitalResultat = "Unknown";
+            string signeringsResultat = "Unknown";
+
 
             try
             {
                 if (true)
                 {
                     //Chaining Functions
+                    //Init
                     if (!ctx.IsReplaying)
-                        log.Info("About to call A_InitNyKunde activity");
-
+                        log.Info("A_InitNyKunde aktivitet kalles");
                     kundenummerTemp = await
                         ctx.CallActivityAsync<string>("A_InitNyKunde", firmanavn);
 
-                    //if (!ctx.IsReplaying)
-                    //    log.Info("About to call A_OpprettDriftskonto activity");
+                    //Opprett driftskonto
+                    kontonummer = await
+                        ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
 
-                    //kontonummer = await
-                    //    ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
+                    //Innbetaling av aksjekapital
+                    var retries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
+                    aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", retries);
 
-                    ////Send sms og epost
-                    //if (!ctx.IsReplaying)
-                    //    log.Info("About to call A_SendAksjekapitalRequestEmail activity");
-                    //await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", kundenummerTemp);
+                    if (aksjekapitalResultat == "BeløpInnbetalt")
+                    {
+                        //Fortsett..
+                    }
+                    else
+                    {
+                        //TODO Stopp videre behandling
+                        if (!ctx.IsReplaying)
+                            log.Info("Innbetaling ikke utført i tide");
+                    }
                 }
-
-                //Start sjekk om aksjekapital er innbetalt
-
-
-                // Sjekk innbetaling til konto >= aksjekapitalbeløp
-                // Hvis ikke innbetalt innen frist
-                //  Sendpurring 1 gang med ny frist.
-                //  Dersom denne fristen også utløper: Send melding til kunde og avslutt sak
 
                 if (false)
                 {
@@ -67,16 +68,16 @@ namespace BliNyKundeProsess
                         var winner = await Task.WhenAny(aksjekapitalApprovalTask, timeoutTask);
                         if (winner == aksjekapitalApprovalTask)
                         {
-                            aksjekapitalApprovalResult = aksjekapitalApprovalTask.Result;
+                            aksjekapitalResultat = aksjekapitalApprovalTask.Result;
                             cts.Cancel(); // we should cancel the timeout task
                         }
                         else
                         {
-                            aksjekapitalApprovalResult = "Timed Out";
+                            aksjekapitalResultat = "Timed Out";
                         }
                     }
 
-                    if (aksjekapitalApprovalResult == "Approved")
+                    if (aksjekapitalResultat == "Approved")
                     {
                         ;
                         //fortsett
@@ -120,7 +121,7 @@ namespace BliNyKundeProsess
                     //sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", null);
 
                     //TODO: Les retries fra Config!!
-                    sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSigneringWithRetry", 2);
+                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSigneringWithRetry", 2);
 
                     //if(sjekkSigneringsResult == "Timed Out")
                     //{
@@ -144,7 +145,7 @@ namespace BliNyKundeProsess
                     //sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", null);
 
                     //TODO: Les retries fra Config!!
-                    sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", 2);
+                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", 2);
 
                     //if(sjekkSigneringsResult == "Timed Out")
                     //{
@@ -160,14 +161,14 @@ namespace BliNyKundeProsess
 
                 if (false)
                 {
-                    sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_TestUserEvent", 00945333222);
+                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_TestUserEvent", 00945333222);
                 }
 
             }
             catch (Exception e)
             {
                 if (!ctx.IsReplaying)
-                    log.Info($"Caught an error from an activity: {e.Message}");
+                    log.Error($"Caught an error from an activity: {e.Message}");
 
                 await
                     ctx.CallActivityAsync<string>("A_Cleanup", kundenummerTemp);
@@ -183,8 +184,8 @@ namespace BliNyKundeProsess
             {
                 KundenummerTemp = kundenummerTemp,
                 Kontonummer = kontonummer,
-                AksjekapitalApprovalResult = aksjekapitalApprovalResult,
-                SjekkSigneringsResult = sjekkSigneringsResult
+                AksjekapitalResultat = aksjekapitalResultat,
+                SigneringsResultat = signeringsResultat
             };
         }
 
@@ -246,6 +247,144 @@ namespace BliNyKundeProsess
         //    return sjekkSigneringsResult;
         //}
 
+        #region Aksjekapital
+        [FunctionName("O_SendOgSjekkAksjekapitalWithRetry")]
+        public static async Task<string> SendOgSjekkAksjekapitalWithRetry(
+                  [OrchestrationTrigger] DurableOrchestrationContext ctx,
+                  TraceWriter log)
+        {
+            //    //Merk Exceptions bobbler opp til hovedork. funksjonen.
+            var retries = ctx.GetInput<int>();
+            if (!ctx.IsReplaying)
+                log.Info($"O_SendOgSjekkAksjekapitalWithRetry aktivitet kalles med antall retries: {retries}");
+
+            var sjekkInnbetalingsResultat = "Unknown";
+
+            for (var retryCount = 0; retryCount < retries; retryCount++)
+            {
+                if (!ctx.IsReplaying)
+                    log.Info("A_SendAksjekapitalRequestEmail aktivitet kalles: " + retryCount + 1 + ". gang");
+                await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", "123123"); //TODO: Kundeinfo inn her
+
+
+                //TODO sjekk at sending gikk OK - HVORDAN??
+                //Start sjekk om aksjekapital er innbetalt
+
+                // Sjekk innbetaling til konto >= aksjekapitalbeløp
+                // Hvis ikke innbetalt innen frist
+                //  Sendpurring 1 gang med ny frist.
+                //  Dersom denne fristen også utløper: Send melding til kunde og avslutt sak
+
+                if (!ctx.IsReplaying)
+                    log.Info("sjekker innbetaling: " + retryCount + 1 + ". gang");
+                sjekkInnbetalingsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SjekkInnbetalingAksjekaital", 3); //TODO 
+
+                if (sjekkInnbetalingsResultat == "BeløpInnbetalt")
+                {
+                    if (!ctx.IsReplaying)
+                        log.Info("Aksjekapital betalt i tide.");
+                    break;
+                }
+            }
+            return sjekkInnbetalingsResultat;
+
+        }
+
+        [FunctionName("O_SjekkInnbetalingAksjekaital")]
+        public static async Task<string> SjekkInnbetalingAksjekaital(
+             [OrchestrationTrigger] DurableOrchestrationContext ctx,
+             TraceWriter log)
+        {
+            var n = ctx.GetInput<int>();
+            string sjekkSigneringsResult = "Unknown";
+
+            await ctx.CallActivityAsync<string>("A_SendMeldingTilKontoService", new InnbetalingsInfo()
+            {
+                OrchestrationId = ctx.InstanceId,
+                Amount = 30000
+            });
+
+
+            using (var cts = new CancellationTokenSource())
+            {
+                //TODO: Timeout fra konfig - 2 uker i prod, Kort tid i test
+                var timeoutAt = ctx.CurrentUtcDateTime.AddHours(2);
+
+                //Oppretter 2 oppgaver og sjekker hvilken som er ferdig først
+                //Forenkler: Signeringsstatus rapporteres fra en seperat tjeneste. Trenger da kun å lytte på en event.
+                var timeoutTask = ctx.CreateTimer(timeoutAt, cts.Token);
+                var sjekkSigneringsTask = ctx.WaitForExternalEvent<string>("InnbetalingsResult");
+
+                var winner = await Task.WhenAny(sjekkSigneringsTask, timeoutTask);
+                if (winner == sjekkSigneringsTask)
+                {
+                    sjekkSigneringsResult = sjekkSigneringsTask.Result;
+                    cts.Cancel(); // we should cancel the timeout task
+                }
+                else
+                {
+                    sjekkSigneringsResult = "Timed Out";
+                }
+            }
+
+            if (sjekkSigneringsResult == "BeløpInnbetalt")
+            {
+                if (!ctx.IsReplaying)
+                    log.Info("Aksjekapital er innbetalt. ");
+            }
+            else
+            {
+                if (!ctx.IsReplaying)
+                    log.Info("Aksjekapital er IKKE innbetalt i tide.");
+            }
+            return sjekkSigneringsResult;
+        }
+
+        //[FunctionName("O_SjekkSignering")]
+        //public static async Task<string> SjekkSignering(
+        //         [OrchestrationTrigger] DurableOrchestrationContext ctx,
+        //         TraceWriter log)
+        //{
+        //    //Denne retry-mekanismen fungerer ikke helt, hva bør en gjøre? Kanskje kaste en exception som en fanger i retry på utsiden?
+
+        //    string sjekkSigneringsResult = "Unknown";
+        //    using (var cts = new CancellationTokenSource())
+        //    {
+        //        var timeoutAt = ctx.CurrentUtcDateTime.AddSeconds(20);
+
+        //        //Oppretter 2 oppgaver og sjekker hvilken som er ferdig først
+        //        var timeoutTask = ctx.CreateTimer(timeoutAt, cts.Token);
+
+
+        //        for (int retryCount = 0; retryCount <= 1; retryCount++)
+        //        {
+        //            var sjekkSigneringsTask = ctx.WaitForExternalEvent<string>("ApprovalResult");
+
+        //            var winner = await Task.WhenAny(sjekkSigneringsTask, timeoutTask);
+        //            if (winner == sjekkSigneringsTask)
+        //            {
+        //                sjekkSigneringsResult = sjekkSigneringsTask.Result;
+        //                break;
+        //                //cts.Cancel(); // we should cancel the timeout task
+        //            }
+        //            else
+        //            {
+        //                sjekkSigneringsResult = "Timed Out";
+        //                break;
+        //            }
+        //        }
+
+        //        if (!timeoutTask.IsCompleted)
+        //        {
+        //            cts.Cancel(); // we should cancel the timeout task
+        //        }
+
+        //        return sjekkSigneringsResult;
+        //    }
+        //}
+        #endregion Aksjekapital
+
+        #region Signering
         [FunctionName("O_SendOgSjekkSigneringWithRetry")]
         public static async Task<string> SendOgSjekkSigneringWithRetry(
                   [OrchestrationTrigger] DurableOrchestrationContext ctx,
@@ -418,5 +557,6 @@ namespace BliNyKundeProsess
         //        return sjekkSigneringsResult;
         //    }
         //}
+        #endregion Signering
     }
 }

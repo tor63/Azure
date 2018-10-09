@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BliNyKundeClassLibrary
 {
-    public class Signering
+    public class TableStoreItem
     {
         public string PartitionKey { get; set; }
         public string RowKey { get; set; }

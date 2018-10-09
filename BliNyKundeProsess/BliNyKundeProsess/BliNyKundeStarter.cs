@@ -18,6 +18,7 @@ namespace BliNyKundeProsess
             [OrchestrationClient] DurableOrchestrationClient starter,
             TraceWriter log)
         {
+            log.Info(" ");
             log.Info("BliNyKundeStarter - HTTP trigger function processed a request.");
 
             // parse query parameter

@@ -18,7 +18,7 @@ Saksnummer   INT IDENTITY PRIMARY KEY,
 Sakstype  INT REFERENCES Sakstype (Id),
 Kundenummer NVARCHAR(200),
 Kundenavn NVARCHAR(200),
-DateCreated   DATETIME NOT NULL
+UtcDateTimeCreated   DATETIME NOT NULL
 )
 
 DROP TABLE Sak;

@@ -9,14 +9,13 @@ using Microsoft.Azure.WebJobs.Host;
 
 namespace BliNyKundeProsess
 {
-    public static class SigneringsServiceHttpTrigger
+    public static class KontoServiceHttpTrigger
     {
-        [FunctionName("SigneringsServiceHttpTrigger")]
+        [FunctionName("KontoServiceHttpTrigger")]
         public static async Task<HttpResponseMessage> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "SubmitSignering/{id}")]
-            HttpRequestMessage req,
-                        [OrchestrationClient] DurableOrchestrationClient client,
-            [Table("Signeringer", "Signering", "{id}", Connection = "AzureWebJobsStorage")] TableStoreItem signering,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "SubmitInnbetaling/{id}")]HttpRequestMessage req,
+            [OrchestrationClient] DurableOrchestrationClient client,
+            [Table("Innbetalinger", "Aksjekapital", "{id}", Connection = "AzureWebJobsStorage")] TableStoreItem aksjekap,
             TraceWriter log)
         {
             log.Info(" ");
@@ -27,15 +26,15 @@ namespace BliNyKundeProsess
                 .FirstOrDefault(q => string.Compare(q.Key, "result", true) == 0).Value;
 
             if (result == null)
-                return req.CreateResponse(HttpStatusCode.BadRequest, "Trenger et signeringsresultat");
+                return req.CreateResponse(HttpStatusCode.BadRequest, "Trenger et innbetalingsresultat");
 
 
-            log.Warning($"Sending Signerings Resultat to {signering.OrchestrationId} of {result}");
+            log.Warning($"Sending Innbetalingsresultat to {aksjekap.OrchestrationId} of {result}");
 
             // send the SigneringsResult external event to this orchestration
-            await client.RaiseEventAsync(signering.OrchestrationId, "SigneringsResult", result);
+            await client.RaiseEventAsync(aksjekap.OrchestrationId, "InnbetalingsResult", result);
 
-            return req.CreateResponse(HttpStatusCode.OK);
+            return req.CreateResponse(HttpStatusCode.OK, "Innbetalingsmelding mottatt");
         }
     }
 }
