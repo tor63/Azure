@@ -68,7 +68,6 @@ namespace BliNyKundeProsess
         //    return sjekkSigneringsResult;
         //}
 
-        #region Signering
         [FunctionName("O_SendOgSjekkSigneringWithRetry")]
         public static async Task<string> SendOgSjekkSigneringWithRetry(
                   [OrchestrationTrigger] DurableOrchestrationContext ctx,
@@ -76,19 +75,27 @@ namespace BliNyKundeProsess
         {
             //    //Merk Exceptions bobbler opp til hovedrok. funksjonen.
             var retries = ctx.GetInput<int>();
-            string sjekkSigneringsResult = "Unknown";
+            var sjekkSigneringsResult = "Unknown";
 
-            for (int retryCount = 0; retryCount < retries; retryCount++)
+            //TODO spesial sending ved purring
+            if (!ctx.IsReplaying)
+                log.Info("sender melding om signering.");
+            var signatarer = await ctx.CallSubOrchestratorAsync<List<Signatar>>("O_SendSignering", null);
+
+            for (var retryCount = 0; retryCount < retries; retryCount++)
             {
-                if (!ctx.IsReplaying)
-                    log.Info("sender signering: " + retryCount + 1 + ". gang");
-                var signatarer = await ctx.CallSubOrchestratorAsync<List<Signatar>>("O_SendSignering", null);
-
-                //TODO sjekk at sending gikk OK - HVORDAN??
+                //Send signering
+                if (retryCount > 0)
+                {
+                    if (!ctx.IsReplaying)
+                        log.Info("sender purring om signering: " + retryCount + 1 + ". gang");
+                    signatarer = await ctx.CallSubOrchestratorAsync<List<Signatar>>("O_SendSignering", null);
+                }
 
                 if (!ctx.IsReplaying)
                     log.Info("sjekker signering: " + retryCount + 1 + ". gang");
                 sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", signatarer);
+
                 if (sjekkSigneringsResult == "AlleHarSignert")
                 {
                     if (!ctx.IsReplaying)
@@ -116,11 +123,9 @@ namespace BliNyKundeProsess
                 signeringTasks.Add(task);
             }
 
-            var sendSigneringsResults = await Task.WhenAll(signeringTasks);
+            await Task.WhenAll(signeringTasks);
             return signatarer;
         }
-
-
 
         //[FunctionName("O_SjekkSigneringWithRetry")]
         //public static async Task<string> SjekkSigneringWithRetry(
@@ -194,7 +199,7 @@ namespace BliNyKundeProsess
                 if (!ctx.IsReplaying)
                     log.Info("Signering ikke utført i tide. ");
 
-                //await ctx.CallActivityAsync("A_Cleanup", kundenummerTemp);
+                //await ctx.CallActivityAsync("A_RyddOgAvsluttSak", kundenummerTemp);
             }
             return sjekkSigneringsResult;
         }
@@ -241,6 +246,5 @@ namespace BliNyKundeProsess
         //        return sjekkSigneringsResult;
         //    }
         //}
-        #endregion Signering
     }
 }

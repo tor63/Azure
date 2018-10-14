@@ -71,11 +71,11 @@ namespace BliNyKundeProsess
 
             log.Info($"Legger info om sigernering i Azure Table Storage: {signering}"); //TODO sjekk logg
 
-            log.Info($"Signerings url: {signering}"); //TODO sjekk logg
-
             //TODO, hent fra konfig.: var host = ConfigurationManager.AppSettings["Host"]; 
             var host = "http://localhost:7071";
             var signeringsurl = $"{host}/api/SubmitSignering/{signeringsCode}";
+            log.Info($"Signerings url: {signeringsurl}"); //TODO sjekk logg
+
             //Lag en http trigger event fra service...
             //Som en midlertidig løsning legges denne i Postman
         }

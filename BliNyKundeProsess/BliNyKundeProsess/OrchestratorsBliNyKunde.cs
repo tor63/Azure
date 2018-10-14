@@ -18,38 +18,56 @@ namespace BliNyKundeProsess
             string kundenummerTemp = null;
             string kundenummer = null;
             string kontonummer = null;
+            string saksResultat = "Unknown";
             string aksjekapitalResultat = "Unknown";
             string signeringsResultat = "Unknown";
 
 
             try
             {
-                if (true)
+                //Chaining Functions
+                //Init
+                if (!ctx.IsReplaying)
+                    log.Info("A_InitNyKunde aktivitet kalles");
+                kundenummerTemp = await
+                    ctx.CallActivityAsync<string>("A_InitNyKunde", firmanavn);
+
+                //Opprett driftskonto
+                kontonummer = await
+                    ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
+
+                //Innbetaling av aksjekapital
+                var retries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
+                aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", retries);
+
+                if (aksjekapitalResultat != "BeløpInnbetalt")
                 {
-                    //Chaining Functions
-                    //Init
+                    //TODO Stopp videre behandling
                     if (!ctx.IsReplaying)
-                        log.Info("A_InitNyKunde aktivitet kalles");
-                    kundenummerTemp = await
-                        ctx.CallActivityAsync<string>("A_InitNyKunde", firmanavn);
+                        log.Info("Innbetaling ikke utført i tide, sak avsluttes");
+                    saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
+                }
+                else
+                {
+                    //Signering
+                    if (!ctx.IsReplaying)
+                        log.Info("O_SendOgSjekkSigneringWithRetry kalles");
 
-                    //Opprett driftskonto
-                    kontonummer = await
-                        ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
+                    //TODO: Les retries fra Config!!
+                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", 2);
 
-                    //Innbetaling av aksjekapital
-                    var retries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
-                    aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", retries);
-
-                    if (aksjekapitalResultat == "BeløpInnbetalt")
-                    {
-                        //Fortsett..
-                    }
-                    else
+                    if (signeringsResultat != "AlleHarSignert")
                     {
                         //TODO Stopp videre behandling
                         if (!ctx.IsReplaying)
-                            log.Info("Innbetaling ikke utført i tide");
+                            log.Info("Signering ikke utført i tide, sak avsluttes");
+                        saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
+                    }
+                    else
+                    {
+                        if (!ctx.IsReplaying)
+                            log.Info("Kunde opprettet i banken!! Velkommen som kunde.");
+                        saksResultat = "Kundeforhold opprettet.";
                     }
                 }
 
@@ -85,7 +103,7 @@ namespace BliNyKundeProsess
                     {
                         if (!ctx.IsReplaying)
                             log.Info("Aksjekapital ikke innbetalt i tide. Firma ikke opprettet som kunde i banken og sak avsluttes.");
-                        await ctx.CallActivityAsync("A_Cleanup", kundenummerTemp);
+                        saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
                     }
                 }
 
@@ -169,7 +187,7 @@ namespace BliNyKundeProsess
                     log.Error($"Caught an error from an activity: {e.Message}");
 
                 await
-                    ctx.CallActivityAsync<string>("A_Cleanup", kundenummerTemp);
+                    ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
 
                 return new
                 {
@@ -183,7 +201,8 @@ namespace BliNyKundeProsess
                 KundenummerTemp = kundenummerTemp,
                 Kontonummer = kontonummer,
                 AksjekapitalResultat = aksjekapitalResultat,
-                SigneringsResultat = signeringsResultat
+                SigneringsResultat = signeringsResultat,
+                SaksResultat = saksResultat
             };
         }
     }

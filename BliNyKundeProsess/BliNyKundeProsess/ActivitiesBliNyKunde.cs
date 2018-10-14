@@ -53,7 +53,7 @@ namespace BliNyKundeProsess
             return driftskontonummer;
         }
 
-        [FunctionName("A_Cleanup")]
+        [FunctionName("A_RyddOgAvsluttSak")]
         public static async Task<string> Cleanup(
             [ActivityTrigger] string kundenummerTemp,
             TraceWriter log)
