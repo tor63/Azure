@@ -77,9 +77,8 @@ namespace BliNyKundeProsess
             var retries = ctx.GetInput<int>();
             var sjekkSigneringsResult = "Unknown";
 
-            //TODO spesial sending ved purring
             if (!ctx.IsReplaying)
-                log.Info("sender melding om signering.");
+                log.Info("Sender melding om signering.");
             var signatarer = await ctx.CallSubOrchestratorAsync<List<Signatar>>("O_SendSignering", null);
 
             for (var retryCount = 0; retryCount < retries; retryCount++)

@@ -18,17 +18,24 @@ namespace BliNyKundeProsess
             //I Azure ligger denne konfigurasjonen i FunctionApp.AppSettings
             var retries= Convert.ToInt32(ConfigurationManager.AppSettings["AksjeKapitalSjekkRetries"]);
 
-            log.Info($"Antall retries: {retries} hentet fra konfigurasjon");
+            log.Info($"Antall AksjeKapitalSjekkRetries: {retries} hentet fra konfigurasjon");
             return retries;
         }
 
         [FunctionName("A_SendAksjekapitalRequestEmail")]
         public static async Task SendAksjekapitalRequestEmail(
-            [ActivityTrigger] string kundenummerTemp,
+            [ActivityTrigger] AksjekapitalsMelding melding,
             TraceWriter log)
         {
             log.Info(" ");
-            log.Info($"Sender Email om aksjekapital til kunde: {kundenummerTemp}");
+            if (melding.Meldingsnummer == 0)
+            {
+                log.Info($"Sender første melding på epost om aksjekapital til kunde: {melding}");
+            }
+            else
+            {
+                log.Info($"Sender PURREMELDING på epost om aksjekapital til kunde: {melding}");
+            }
 
             // simulate doing the activity
             await Task.Delay(5000);

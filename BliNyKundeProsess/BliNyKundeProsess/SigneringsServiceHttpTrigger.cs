@@ -35,7 +35,7 @@ namespace BliNyKundeProsess
             // send the SigneringsResult external event to this orchestration
             await client.RaiseEventAsync(signering.OrchestrationId, "SigneringsResult", result);
 
-            return req.CreateResponse(HttpStatusCode.OK);
+            return req.CreateResponse(HttpStatusCode.OK, "Signeringsresultat mottatt");
         }
     }
 }

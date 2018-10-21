@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Threading.Tasks;
 using BliNyKundeClassLibrary;
 using Microsoft.Azure.WebJobs;
@@ -9,6 +10,19 @@ namespace BliNyKundeProsess
 {
     public static class ActivitiesSignering
     {
+        [FunctionName("A_GetSigneringsRetries")]
+        public static int GetSigneringsRetries(
+            [ActivityTrigger] object input,
+            TraceWriter log)
+        {
+            //Leser fra Config. Lokalkjøring er dette fra filen 'local.settings.json'.
+            //I Azure ligger denne konfigurasjonen i FunctionApp.AppSettings
+            var retries = Convert.ToInt32(ConfigurationManager.AppSettings["SigneringsRetries"]);
+
+            log.Info($"Antall SigneringsRetries: {retries} hentet fra konfigurasjon");
+            return retries;
+        }
+
         [FunctionName("A_GetSignatarer")]
         public static List<Signatar> GetSignatarer(
             [ActivityTrigger] string kundenummer,

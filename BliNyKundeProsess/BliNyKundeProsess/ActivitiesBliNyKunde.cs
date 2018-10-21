@@ -12,7 +12,7 @@ namespace BliNyKundeProsess
         public static async Task<string> InitKunde(
             [ActivityTrigger] string firmanavn, //Defines the function is an activity function, Can pass class
             TraceWriter log)
-        //Could add bindings as usual Azure Functions
+        //Can add bindings as usual Azure Functions
         {
             log.Info(" ");
 
@@ -65,7 +65,7 @@ namespace BliNyKundeProsess
                 // simulate doing the activity
                 await Task.Delay(1000);
             }
-            return "Deleted Customer successfully";
+            return "Avslutter sak. Kunde IKKE opprettet.";
         }
     }
 }

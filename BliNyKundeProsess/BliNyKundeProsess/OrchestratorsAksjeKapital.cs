@@ -24,20 +24,13 @@ namespace BliNyKundeProsess
             {
                 if (!ctx.IsReplaying)
                     log.Info("A_SendAksjekapitalRequestEmail aktivitet kalles: " + retryCount + 1 + ". gang");
-                await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", "123123"); //TODO: Kundeinfo inn her
 
-
-                //TODO sjekk at sending gikk OK - HVORDAN??
-                //Start sjekk om aksjekapital er innbetalt
-
-                // Sjekk innbetaling til konto >= aksjekapitalbeløp
-                // Hvis ikke innbetalt innen frist
-                //  Sendpurring 1 gang med ny frist.
-                //  Dersom denne fristen også utløper: Send melding til kunde og avslutt sak
+                await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", 
+                    new AksjekapitalsMelding{Kundenummer = "123456", Meldingsnummer = retryCount});
 
                 if (!ctx.IsReplaying)
                     log.Info("sjekker innbetaling: " + retryCount + 1 + ". gang");
-                sjekkInnbetalingsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SjekkInnbetalingAksjekapital", 3); //TODO 
+                sjekkInnbetalingsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SjekkInnbetalingAksjekapital", 9); //TODO 
 
                 if (sjekkInnbetalingsResultat == "BeløpInnbetalt")
                 {
@@ -47,7 +40,6 @@ namespace BliNyKundeProsess
                 }
             }
             return sjekkInnbetalingsResultat;
-
         }
 
         [FunctionName("O_SjekkInnbetalingAksjekapital")]
@@ -56,7 +48,7 @@ namespace BliNyKundeProsess
              TraceWriter log)
         {
             var n = ctx.GetInput<int>();
-            string sjekkSigneringsResult = "Unknown";
+            var sjekkSigneringsResult = "Unknown";
 
             await ctx.CallActivityAsync<string>("A_SendMeldingTilKontoService", new InnbetalingsInfo()
             {
@@ -64,11 +56,11 @@ namespace BliNyKundeProsess
                 Amount = 30000
             });
 
-
             using (var cts = new CancellationTokenSource())
             {
                 //TODO: Timeout fra konfig - 2 uker i prod, Kort tid i test
-                var timeoutAt = ctx.CurrentUtcDateTime.AddHours(2);
+                //var timeoutAt = ctx.CurrentUtcDateTime.AddHours(2);
+                var timeoutAt = ctx.CurrentUtcDateTime.AddSeconds(60);
 
                 //Oppretter 2 oppgaver og sjekker hvilken som er ferdig først
                 //Forenkler: Signeringsstatus rapporteres fra en seperat tjeneste. Trenger da kun å lytte på en event.

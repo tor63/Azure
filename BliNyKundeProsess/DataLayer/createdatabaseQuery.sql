@@ -21,6 +21,7 @@ Kundenavn NVARCHAR(200),
 UtcDateTimeCreated   DATETIME NOT NULL
 )
 
+Delete from dbo.sak where Sakstype = 1;
 DROP TABLE Sak;
 
 

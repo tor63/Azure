@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
@@ -18,10 +17,9 @@ namespace BliNyKundeProsess
             string kundenummerTemp = null;
             string kundenummer = null;
             string kontonummer = null;
-            string saksResultat = "Unknown";
-            string aksjekapitalResultat = "Unknown";
-            string signeringsResultat = "Unknown";
-
+            var saksResultat = "Unknown";
+            var aksjekapitalResultat = "Unknown";
+            var signeringsResultat = "Unknown";
 
             try
             {
@@ -37,75 +35,50 @@ namespace BliNyKundeProsess
                     ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
 
                 //Innbetaling av aksjekapital
-                var retries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
-                aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", retries);
+                var aksjeKapitalSjekkRetries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
+                aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", aksjeKapitalSjekkRetries);
 
                 if (aksjekapitalResultat != "BeløpInnbetalt")
                 {
-                    //TODO Stopp videre behandling
                     if (!ctx.IsReplaying)
                         log.Info("Innbetaling ikke utført i tide, sak avsluttes");
                     saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
+                    return new
+                    {
+                        KundenummerTemp = kundenummerTemp,
+                        Kontonummer = kontonummer,
+                        AksjekapitalResultat = aksjekapitalResultat,
+                        SaksResultat = saksResultat
+                    };
                 }
-                else
+
+                //Signering
+                if (!ctx.IsReplaying)
+                    log.Info("O_SendOgSjekkSigneringWithRetry kalles");
+
+                var signeringsRetries = await ctx.CallActivityAsync<int>("A_GetSigneringsRetries", null);
+                signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", signeringsRetries);
+
+                if (signeringsResultat != "AlleHarSignert")
                 {
-                    //Signering
                     if (!ctx.IsReplaying)
-                        log.Info("O_SendOgSjekkSigneringWithRetry kalles");
+                        log.Info("Signering ikke utført i tide, sak avsluttes");
+                    saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
 
-                    //TODO: Les retries fra Config!!
-                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", 2);
-
-                    if (signeringsResultat != "AlleHarSignert")
+                    //Stopp videre behandling
+                    return new
                     {
-                        //TODO Stopp videre behandling
-                        if (!ctx.IsReplaying)
-                            log.Info("Signering ikke utført i tide, sak avsluttes");
-                        saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
-                    }
-                    else
-                    {
-                        if (!ctx.IsReplaying)
-                            log.Info("Kunde opprettet i banken!! Velkommen som kunde.");
-                        saksResultat = "Kundeforhold opprettet.";
-                    }
+                        KundenummerTemp = kundenummerTemp,
+                        Kontonummer = kontonummer,
+                        AksjekapitalResultat = aksjekapitalResultat,
+                        SigneringsResultat = signeringsResultat,
+                        SaksResultat = saksResultat
+                    };
                 }
 
-                if (false)
-                {
-                    using (var cts = new CancellationTokenSource())
-                    {
-                        var timeoutAt = ctx.CurrentUtcDateTime.AddSeconds(30);
-
-                        //Oppretter 2 oppgaver og sjekker hvilken som er ferdig først
-                        var timeoutTask = ctx.CreateTimer(timeoutAt, cts.Token);
-                        var aksjekapitalApprovalTask = ctx.WaitForExternalEvent<string>("ApprovalResult");
-
-                        var winner = await Task.WhenAny(aksjekapitalApprovalTask, timeoutTask);
-                        if (winner == aksjekapitalApprovalTask)
-                        {
-                            aksjekapitalResultat = aksjekapitalApprovalTask.Result;
-                            cts.Cancel(); // we should cancel the timeout task
-                        }
-                        else
-                        {
-                            aksjekapitalResultat = "Timed Out";
-                        }
-                    }
-
-                    if (aksjekapitalResultat == "Approved")
-                    {
-                        ;
-                        //fortsett
-                        //await ctx.CallActivityAsync("A_PublishVideo", withIntroLocation);
-                    }
-                    else
-                    {
-                        if (!ctx.IsReplaying)
-                            log.Info("Aksjekapital ikke innbetalt i tide. Firma ikke opprettet som kunde i banken og sak avsluttes.");
-                        saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
-                    }
-                }
+                if (!ctx.IsReplaying)
+                    log.Info("Kunde opprettet i banken!! Velkommen som kunde.");
+                saksResultat = "Kundeforhold opprettet.";
 
                 if (false)
                 {
@@ -125,59 +98,6 @@ namespace BliNyKundeProsess
                     //    await ctx.CallSubOrchestratorWithRetryAsync<string[]>("O_Signering", new RetryOptions(TimeSpan.FromSeconds(35), 2)
                     //    { Handle = ex => ex is InvalidOperationException }, "00986333111");
 
-                }
-
-                if (false)
-                {
-                    //Signering
-                    if (!ctx.IsReplaying)
-                        log.Info("O_SjekkSigneringWithRetry kalles");
-
-                    // var b = await ctx.CallSubOrchestratorAsync<bool>("O_SjekkSignering");
-                    //sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", null);
-
-                    //TODO: Les retries fra Config!!
-                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSigneringWithRetry", 2);
-
-                    //if(sjekkSigneringsResult == "Timed Out")
-                    //{
-                    //    sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", null);
-
-                    //    if (sjekkSigneringsResult == "Timed Out")
-                    //    {
-                    //        ;
-                    //        //Cancel task
-                    //    }
-                    //}
-                }
-
-                if (false)
-                {
-                    //Signering
-                    if (!ctx.IsReplaying)
-                        log.Info("O_SendOgSjekkSigneringWithRetry kalles");
-
-                    // var b = await ctx.CallSubOrchestratorAsync<bool>("O_SjekkSignering");
-                    //sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", null);
-
-                    //TODO: Les retries fra Config!!
-                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", 2);
-
-                    //if(sjekkSigneringsResult == "Timed Out")
-                    //{
-                    //    sjekkSigneringsResult = await ctx.CallSubOrchestratorAsync<string>("O_SjekkSignering", null);
-
-                    //    if (sjekkSigneringsResult == "Timed Out")
-                    //    {
-                    //        ;
-                    //        //Cancel task
-                    //    }
-                    //}
-                }
-
-                if (false)
-                {
-                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_TestUserEvent", 00945333222);
                 }
 
             }
