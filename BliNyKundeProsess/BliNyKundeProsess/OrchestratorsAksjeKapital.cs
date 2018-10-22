@@ -20,6 +20,10 @@ namespace BliNyKundeProsess
 
             var sjekkInnbetalingsResultat = "Unknown";
 
+            //Testkode som sender virkelig epost med SendGrid
+            await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmailMedSendGrid",
+                   new AksjekapitalsMelding { Kundenummer = "123456", Meldingsnummer = 1 });
+
             for (var retryCount = 0; retryCount < retries; retryCount++)
             {
                 if (!ctx.IsReplaying)

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using BliNyKundeClassLibrary;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
+using SendGrid.Helpers.Mail;
 
 namespace BliNyKundeProsess
 {
@@ -16,7 +17,7 @@ namespace BliNyKundeProsess
         {
             //Leser fra Config. Lokalkjøring er dette fra filen 'local.settings.json'.
             //I Azure ligger denne konfigurasjonen i FunctionApp.AppSettings
-            var retries= Convert.ToInt32(ConfigurationManager.AppSettings["AksjeKapitalSjekkRetries"]);
+            var retries = Convert.ToInt32(ConfigurationManager.AppSettings["AksjeKapitalSjekkRetries"]);
 
             log.Info($"Antall AksjeKapitalSjekkRetries: {retries} hentet fra konfigurasjon");
             return retries;
@@ -30,15 +31,34 @@ namespace BliNyKundeProsess
             log.Info(" ");
             if (melding.Meldingsnummer == 0)
             {
-                log.Info($"Sender første melding på epost om aksjekapital til kunde: {melding}");
+                log.Info($"Sender første melding på epost om aksjekapital til kunde: {melding.Kundenummer}");
             }
             else
             {
-                log.Info($"Sender PURREMELDING på epost om aksjekapital til kunde: {melding}");
+                log.Info($"Sender PURREMELDING på epost om aksjekapital til kunde: {melding.Kundenummer}");
             }
 
             // simulate doing the activity
             await Task.Delay(5000);
+        }
+
+        [FunctionName("A_SendAksjekapitalRequestEmailMedSendGrid")]
+        public static void SendAksjekapitalRequestEmailMedSendGrid(
+          [ActivityTrigger] AksjekapitalsMelding melding,
+          [SendGrid(ApiKey = "SendGridKey")] out Mail message,
+          TraceWriter log)
+        {
+            log.Info(" ");
+            log.Info($"Sender melding på epost om aksjekapital til kunde: {melding.Kundenummer}");
+
+            var approverEmail = new Email(ConfigurationManager.AppSettings["ApproverEmail"]);
+            var senderEmail = new Email(ConfigurationManager.AppSettings["SenderEmail"]);
+            var subject = "Ny kunde - aksjekapital";
+            var body = "Vennligst betal aksjekapital a kr. xxx til konto...";
+            var content = new Content("text/html", body);
+            message = new Mail(senderEmail, subject, approverEmail, content);
+
+            log.Info(body);
         }
 
         [FunctionName("A_SendMeldingTilKontoService")]
