@@ -20,20 +20,20 @@ namespace BliNyKundeProsess
 
             var sjekkInnbetalingsResultat = "Unknown";
 
-            //Testkode som sender virkelig epost med SendGrid
-            await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmailMedSendGrid",
-                   new AksjekapitalsMelding { Kundenummer = "123456", Meldingsnummer = 1 });
+            ////Testkode som sender virkelig epost med SendGrid
+            //await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmailMedSendGrid",
+            //       new AksjekapitalsMelding { Kundenummer = "123456", Meldingsnummer = 1 });
 
             for (var retryCount = 0; retryCount < retries; retryCount++)
             {
                 if (!ctx.IsReplaying)
-                    log.Info("A_SendAksjekapitalRequestEmail aktivitet kalles: " + retryCount + 1 + ". gang");
+                    log.Info("A_SendAksjekapitalRequestEmail aktivitet kalles: " + retryCount + ". gang av totalt " + retries + " forsøk.");
 
                 await ctx.CallActivityAsync("A_SendAksjekapitalRequestEmail", 
                     new AksjekapitalsMelding{Kundenummer = "123456", Meldingsnummer = retryCount});
 
                 if (!ctx.IsReplaying)
-                    log.Info("sjekker innbetaling: " + retryCount + 1 + ". gang");
+                    log.Info("Sjekker innbetaling: " + retryCount + ". gang");
                 sjekkInnbetalingsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SjekkInnbetalingAksjekapital", 9); //TODO 
 
                 if (sjekkInnbetalingsResultat == "BeløpInnbetalt")

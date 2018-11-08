@@ -35,50 +35,60 @@ namespace BliNyKundeProsess
                     ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
 
                 //Innbetaling av aksjekapital
-                var aksjeKapitalSjekkRetries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
-                aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", aksjeKapitalSjekkRetries);
-
-                if (aksjekapitalResultat != "BeløpInnbetalt")
+                if (false)
                 {
-                    if (!ctx.IsReplaying)
-                        log.Info("Innbetaling ikke utført i tide, sak avsluttes");
-                    saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
-                    return new
+                    var aksjeKapitalSjekkRetries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
+                    aksjekapitalResultat =
+                        await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry",
+                            aksjeKapitalSjekkRetries);
+
+                    if (aksjekapitalResultat != "BeløpInnbetalt")
                     {
-                        KundenummerTemp = kundenummerTemp,
-                        Kontonummer = kontonummer,
-                        AksjekapitalResultat = aksjekapitalResultat,
-                        SaksResultat = saksResultat
-                    };
+                        if (!ctx.IsReplaying)
+                            log.Info("Innbetaling ikke utført i tide, sak avsluttes");
+                        saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
+                        return new
+                        {
+                            KundenummerTemp = kundenummerTemp,
+                            Kontonummer = kontonummer,
+                            AksjekapitalResultat = aksjekapitalResultat,
+                            SaksResultat = saksResultat
+                        };
+                    }
                 }
 
                 //Signering
-                if (!ctx.IsReplaying)
-                    log.Info("O_SendOgSjekkSigneringWithRetry kalles");
-
-                var signeringsRetries = await ctx.CallActivityAsync<int>("A_GetSigneringsRetries", null);
-                signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", signeringsRetries);
-
-                if (signeringsResultat != "AlleHarSignert")
+                if (false)
                 {
                     if (!ctx.IsReplaying)
-                        log.Info("Signering ikke utført i tide, sak avsluttes");
-                    saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
+                        log.Info("O_SendOgSjekkSigneringWithRetry kalles");
 
-                    //Stopp videre behandling
-                    return new
+                    var signeringsRetries = await ctx.CallActivityAsync<int>("A_GetSigneringsRetries", null);
+                    signeringsResultat =
+                        await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry",
+                            signeringsRetries);
+
+                    if (signeringsResultat != "AlleHarSignert")
                     {
-                        KundenummerTemp = kundenummerTemp,
-                        Kontonummer = kontonummer,
-                        AksjekapitalResultat = aksjekapitalResultat,
-                        SigneringsResultat = signeringsResultat,
-                        SaksResultat = saksResultat
-                    };
-                }
+                        if (!ctx.IsReplaying)
+                            log.Info("Signering ikke utført i tide, sak avsluttes");
+                        saksResultat = await ctx.CallActivityAsync<string>("A_RyddOgAvsluttSak", kundenummerTemp);
 
-                if (!ctx.IsReplaying)
-                    log.Info("Kunde opprettet i banken!! Velkommen som kunde.");
-                saksResultat = "Kundeforhold opprettet.";
+                        //Stopp videre behandling
+                        return new
+                        {
+                            KundenummerTemp = kundenummerTemp,
+                            Kontonummer = kontonummer,
+                            AksjekapitalResultat = aksjekapitalResultat,
+                            SigneringsResultat = signeringsResultat,
+                            SaksResultat = saksResultat
+                        };
+                    }
+
+                    if (!ctx.IsReplaying)
+                        log.Info("Kunde opprettet i banken!! Velkommen som kunde.");
+                    saksResultat = "Kundeforhold opprettet.";
+                }
 
                 if (false)
                 {
