@@ -26,7 +26,7 @@ namespace BliNyKundeProsess
                 //Chaining Functions
                 //Init
                 if (!ctx.IsReplaying)
-                    log.Info("A_InitNyKunde aktivitet kalles");
+                    log.Info("A_InitNyKunde aktivitet kalles for firma:" + firmanavn);
                 kundenummerTemp = await
                     ctx.CallActivityAsync<string>("A_InitNyKunde", firmanavn);
 
@@ -34,13 +34,11 @@ namespace BliNyKundeProsess
                 kontonummer = await
                     ctx.CallActivityAsync<string>("A_OpprettDriftskonto", kundenummerTemp);
 
-                //Innbetaling av aksjekapital
                 if (false)
                 {
+                    //Innbetaling av aksjekapital
                     var aksjeKapitalSjekkRetries = await ctx.CallActivityAsync<int>("A_GetAksjekapitalRetries", null);
-                    aksjekapitalResultat =
-                        await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry",
-                            aksjeKapitalSjekkRetries);
+                    aksjekapitalResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkAksjekapitalWithRetry", aksjeKapitalSjekkRetries);
 
                     if (aksjekapitalResultat != "BeløpInnbetalt")
                     {
@@ -57,16 +55,14 @@ namespace BliNyKundeProsess
                     }
                 }
 
-                //Signering
                 if (false)
-                {
+                {    
+                    //Signering
                     if (!ctx.IsReplaying)
                         log.Info("O_SendOgSjekkSigneringWithRetry kalles");
 
                     var signeringsRetries = await ctx.CallActivityAsync<int>("A_GetSigneringsRetries", null);
-                    signeringsResultat =
-                        await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry",
-                            signeringsRetries);
+                    signeringsResultat = await ctx.CallSubOrchestratorAsync<string>("O_SendOgSjekkSigneringWithRetry", signeringsRetries);
 
                     if (signeringsResultat != "AlleHarSignert")
                     {
@@ -88,26 +84,26 @@ namespace BliNyKundeProsess
                     if (!ctx.IsReplaying)
                         log.Info("Kunde opprettet i banken!! Velkommen som kunde.");
                     saksResultat = "Kundeforhold opprettet.";
-                }
 
-                if (false)
-                {
-                    //Signering
-                    if (!ctx.IsReplaying)
-                        log.Info("O_SendSignering kalles");
-                    //var signeringResults =
-                    //    await ctx.CallSubOrchestratorAsync<string[]>("O_Signering", "00986333111");
+                    if (false)
+                    {
+                        //Signering
+                        if (!ctx.IsReplaying)
+                            log.Info("O_SendSignering kalles");
+                        //var signeringResults =
+                        //    await ctx.CallSubOrchestratorAsync<string[]>("O_Signering", "00986333111");
 
-                    //Retry upto 2 times with 35 seconds delay between each attempt
-                    var signeringResults =
-                                        await ctx.CallSubOrchestratorWithRetryAsync<string[]>("O_SendSignering", new RetryOptions(TimeSpan.FromSeconds(35), 2),
-                                         "00986333111");
+                        //Retry upto 2 times with 35 seconds delay between each attempt
+                        var signeringResults =
+                                            await ctx.CallSubOrchestratorWithRetryAsync<string[]>("O_SendSignering", new RetryOptions(TimeSpan.FromSeconds(35), 2),
+                                             "00986333111");
 
-                    //Only retry invalid operation Exception
-                    //var signeringResults =
-                    //    await ctx.CallSubOrchestratorWithRetryAsync<string[]>("O_Signering", new RetryOptions(TimeSpan.FromSeconds(35), 2)
-                    //    { Handle = ex => ex is InvalidOperationException }, "00986333111");
+                        //Only retry invalid operation Exception
+                        //var signeringResults =
+                        //    await ctx.CallSubOrchestratorWithRetryAsync<string[]>("O_Signering", new RetryOptions(TimeSpan.FromSeconds(35), 2)
+                        //    { Handle = ex => ex is InvalidOperationException }, "00986333111");
 
+                    }
                 }
 
             }

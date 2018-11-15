@@ -1,0 +1,2 @@
+- [ ] Sjekk NuGet Consolidate
+- [ ] Sjekk om endring påvirker Raporter

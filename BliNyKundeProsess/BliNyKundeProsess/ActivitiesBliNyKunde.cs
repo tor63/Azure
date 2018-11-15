@@ -24,9 +24,13 @@ namespace BliNyKundeProsess
             };
             log.Info($"Opprettet midlertidig kundenummer: {dbsak.Kundenummer} for: {firmanavn}");
 
-            log.Info($"Lagrer sak i AFS databasen.");
-            IDbSakService db = new DbSakService();
-            db.CreateSak(dbsak);
+            //log.Info($"Lagrer sak i AFS databasen.");
+            //IDbSakService db = new DbSakService();
+            //db.CreateSak(dbsak);
+
+            // simulate doing the activity
+            var delaySeconds = 30;
+            await Task.Delay(delaySeconds * 1000);
 
             //Test throwing exception
             if (firmanavn.ToUpper().Contains("ERROR"))
