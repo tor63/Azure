@@ -8,6 +8,7 @@ namespace DataLayer
 
         public void CreateSak(DbSak sak)
         {
+            //Kommentar her
             var builder = new SqlConnectionStringBuilder
             {
                 DataSource = "afsdatabase.database.windows.net",

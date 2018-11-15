@@ -15,8 +15,8 @@ namespace BliNyKundeProsess
             [ActivityTrigger] object input,
             TraceWriter log)
         {
-            //Leser fra Config. Lokalkjøring er dette fra filen 'local.settings.json'.
-            //I Azure ligger denne konfigurasjonen i FunctionApp.AppSettings
+            // Leser fra Config. Lokalkjøring er dette fra filen 'local.settings.json'.
+            // I Azure ligger denne konfigurasjonen i FunctionApp.AppSettings
             var retries = Convert.ToInt32(ConfigurationManager.AppSettings["AksjeKapitalSjekkRetries"]);
 
             log.Info($"Antall AksjeKapitalSjekkRetries: {retries} hentet fra konfigurasjon");
